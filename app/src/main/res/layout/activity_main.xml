@@ -27,8 +27,6 @@
     </LinearLayout>
 
 
-
-
     <TextView
         android:id="@+id/promt"
         android:layout_width="fill_parent"
@@ -37,6 +35,23 @@
         />
 
 
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/bt_read_one"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="读取一个块的内容"
+        android:background="@drawable/bluestyle"
+        android:layout_margin="5dp"
+        />
+
+    <android.support.v7.widget.AppCompatButton
+        android:layout_margin="5dp"
+        android:id="@+id/bt_read_multiple"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="读取多个块的内容"
+        android:background="@drawable/bluestyle"
+        android:textSize="10sp"/>
 
 
     <Button

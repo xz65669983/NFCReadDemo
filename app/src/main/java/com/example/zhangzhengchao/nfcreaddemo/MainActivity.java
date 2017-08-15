@@ -37,9 +37,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean isNFC_support = false;
     // NFC TAG
     private Tag tagFromIntent;
-    private String apdu;
     private NfcV nfcV;
-
+    //读取单块命令(第一块)
+    private String apdu00;
+    //读取多块命令（第一第二块）
+    private String apdu01;
     @BindView(R.id.promt)
      TextView textInfo;
     @BindView(R.id.tv_tagid)
@@ -50,7 +52,53 @@ public class MainActivity extends AppCompatActivity {
     public void delete(){
         textInfo.setText("");
     }
+    @OnClick(R.id.bt_read_one)
+    public void readOne(){
+      readBlock(0);
 
+    }
+    @OnClick(R.id.bt_read_multiple)
+    public void readmultiple(){
+      readBlock(1);
+    }
+
+    private  void readBlock(int model){
+        if(tagFromIntent==null) return;
+
+        nfcV = NfcV.get(tagFromIntent);
+        try {
+            nfcV.connect();
+            switch (model){
+                case 0:
+                    String readone=read(tagFromIntent, apdu00);
+                    textInfo.append("单块读取内容为"+readone+"\n");
+                    break;
+                case 1:
+                    String readmulti=read(tagFromIntent, apdu00);
+                    textInfo.append("多块读取内容为"+readmulti+"\n");
+                    break;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            tv_tagid.setText("");
+            tv_tag_status.setTextColor(Color.RED);
+            tv_tag_status.setText("请靠近标签");
+            Toast.makeText(this,"未找到标签",Toast.LENGTH_LONG).show();
+            return;
+        } catch (FormatException e) {
+            e.printStackTrace();
+            return;
+        }
+        finally {
+            try {
+                nfcV.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
         //初始化NFC
         initNFCData();
     }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -78,7 +125,6 @@ public class MainActivity extends AppCompatActivity {
             processIntent(this.getIntent());
         }
     }
-
     @Override
     protected void onPause() {
         super.onPause();
@@ -139,38 +185,72 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void processIntent(Intent intent) {
+//        if (isNFC_support == false){
+//            return;
+//        }
+//        // 取出封装在intent中的TAG
+//        StringBuilder sb=new StringBuilder();
+//        tagFromIntent = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+//        textInfo.setTextColor(Color.BLUE);
+//        tv_tag_status.setTextColor(Color.GREEN);
+//        tv_tag_status.setText("获取标签成功");
+//        String tagId = FM_Bytes.bytesToHexString(tagFromIntent.getId());
+//        //apdu= "22B21d"+tagId+"11223344";
+//       // apdu="22B21d11223344";
+//        String apdu1="22d61d"+tagId+"000d11223344";
+//        String apdu2="22B21d"+tagId+"11223344";
+//
+//        tv_tagid.setText("标签ID为:"+ tagId);
+//        Toast.makeText(this, "找到卡片", Toast.LENGTH_SHORT).show();
+//        nfcV = NfcV.get(tagFromIntent);
+//        Log.i(TAG,"获得了nfcV");
+//        try {
+//            nfcV.connect();
+//            String read=read(tagFromIntent, apdu1);
+//            sb.append("发送指令："+apdu1+"\n");
+//            sb.append("读取到的数据为:\n");
+//            Log.i(TAG,read);
+//            sb.append(read+"\n");
+//            textInfo.append(sb);
+//            sb.delete(0,sb.length());
+//
+//            String read2=read(tagFromIntent, apdu2);
+//            sb.append("发送指令："+apdu2+"\n");
+//            sb.append("读取到的数据为:\n");
+//            sb.append(read2+"\n");
+//            Log.i(TAG,read2);
+//            textInfo.append(sb);
+//            sb.delete(0,sb.length());
+//
+//        } catch (IOException e) {
+//            Log.i(TAG,"IOException");
+//            e.printStackTrace();
+//        } catch (FormatException e) {
+//            Log.i(TAG,"FormatException");
+//            e.printStackTrace();
+//        }
+
         if (isNFC_support == false){
             return;
         }
+        Log.i(TAG, "yes im coming");
         // 取出封装在intent中的TAG
-        StringBuilder sb=new StringBuilder();
         tagFromIntent = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+
         textInfo.setTextColor(Color.BLUE);
         tv_tag_status.setTextColor(Color.GREEN);
-        tv_tag_status.setText("获取标签成功");
+        tv_tag_status.setText("获取标签成功    读取时请确保标签不要远离手机");
         String tagId = FM_Bytes.bytesToHexString(tagFromIntent.getId());
-        apdu= "22B21d"+tagId+"11223344";
+
+        apdu00 = "6220"+tagId+"01";
+        apdu01 = "6223"+tagId+"0102";
         tv_tagid.setText("标签ID为:"+ tagId);
         Toast.makeText(this, "找到卡片", Toast.LENGTH_SHORT).show();
-        nfcV = NfcV.get(tagFromIntent);
-        Log.i(TAG,"获得了nfcV");
-        try {
-            nfcV.connect();
-            Log.i(TAG,"NFCV已连接");
-            Log.i(TAG,nfcV.toString());
-            String read=read(tagFromIntent, apdu);
-            Log.i(TAG,"获得了read为："+read);
-            sb.append("读取到的数据为:\n");
-            sb.append(read+"\n");
-            textInfo.append(sb);
-            sb.delete(0,sb.length());
 
-        } catch (IOException e) {
-            Log.i(TAG,"IOException");
-            e.printStackTrace();
-        } catch (FormatException e) {
-            Log.i(TAG,"FormatException");
-            e.printStackTrace();
+        // Tech List
+        String[] techList = tagFromIntent.getTechList();
+        for(String s:techList){
+            Log.i(TAG,"支持的类型有"+s);
         }
 
 
@@ -215,4 +295,6 @@ public class MainActivity extends AppCompatActivity {
         tagDetected = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
         tagDetected.addCategory(Intent.CATEGORY_DEFAULT);
     }
+
+
 }
